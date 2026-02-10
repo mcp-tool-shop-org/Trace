@@ -11,6 +11,7 @@ public readonly record struct MutatorId(string Value)
     public static readonly MutatorId DifficultyCurve = new("DifficultyCurve");
     public static readonly MutatorId RhythmLock = new("RhythmLock");
     public static readonly MutatorId GateJitter = new("GateJitter");
+    public static readonly MutatorId SegmentBias = new("SegmentBias");
 
     public override string ToString() => Value;
 }
