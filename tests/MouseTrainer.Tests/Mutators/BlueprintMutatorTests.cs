@@ -832,6 +832,402 @@ public class BlueprintMutatorTests
     }
 
     // ─────────────────────────────────────────────────────
+    //  11. SegmentBias
+    // ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void SegmentBias_EvenPartition_12Gates_3Segments()
+    {
+        // N=12, S=3 → 4 gates per segment
+        // Crescendo (shape=0): seg0 d=-1 (easier), seg1 d=0, seg2 d=+1 (harder)
+        // At amt=0.5: seg0 apertureMul=1.5, seg1 apertureMul=1.0, seg2 apertureMul=0.5
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0.5f, shape: 0);
+        var result = mutator.Apply(blueprint);
+
+        // Seg 0 (gates 0-3): easier → aperture should increase
+        for (int i = 0; i < 4; i++)
+        {
+            Assert.True(result.Gates[i].ApertureHeight > blueprint.Gates[i].ApertureHeight,
+                $"Gate {i} (seg 0): should have wider aperture. Got {result.Gates[i].ApertureHeight} vs {blueprint.Gates[i].ApertureHeight}");
+        }
+
+        // Seg 1 (gates 4-7): neutral → aperture unchanged
+        for (int i = 4; i < 8; i++)
+        {
+            Assert.Equal(blueprint.Gates[i].ApertureHeight, result.Gates[i].ApertureHeight, precision: 3);
+        }
+
+        // Seg 2 (gates 8-11): harder → aperture should decrease
+        for (int i = 8; i < 12; i++)
+        {
+            Assert.True(result.Gates[i].ApertureHeight < blueprint.Gates[i].ApertureHeight,
+                $"Gate {i} (seg 2): should have narrower aperture. Got {result.Gates[i].ApertureHeight} vs {blueprint.Gates[i].ApertureHeight}");
+        }
+    }
+
+    [Fact]
+    public void SegmentBias_UnevenPartition_11Gates_3Segments()
+    {
+        // N=11, S=3: seg = floor(i * 3 / 11)
+        // i=0: 0, i=1: 0, i=2: 0, i=3: 0 (floor(9/11)=0)
+        // i=4: 1 (floor(12/11)=1), i=5: 1, i=6: 1, i=7: 1 (floor(21/11)=1)
+        // i=8: 2 (floor(24/11)=2), i=9: 2, i=10: 2
+        // So: 4, 4, 3 gates per segment
+        var blueprint = CreateBlueprintWithGateCount(11);
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0.5f, shape: 0);
+        var result = mutator.Apply(blueprint);
+
+        // Seg 0 (gates 0-3): d=-1, easier
+        for (int i = 0; i < 4; i++)
+            Assert.True(result.Gates[i].ApertureHeight > blueprint.Gates[i].ApertureHeight);
+
+        // Seg 1 (gates 4-7): d=0, neutral
+        for (int i = 4; i < 8; i++)
+            Assert.Equal(blueprint.Gates[i].ApertureHeight, result.Gates[i].ApertureHeight, precision: 3);
+
+        // Seg 2 (gates 8-10): d=+1, harder
+        for (int i = 8; i < 11; i++)
+            Assert.True(result.Gates[i].ApertureHeight < blueprint.Gates[i].ApertureHeight);
+    }
+
+    [Fact]
+    public void SegmentBias_Crescendo_EarlyEasierLateHarder()
+    {
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator(segments: 2, amount: 0.5f, shape: 0);
+        var result = mutator.Apply(blueprint);
+
+        // Seg 0 (first half): d=-1, apertureMul=1.5, easier
+        // Seg 1 (second half): d=+1, apertureMul=0.5, harder
+        float firstHalfAvgAperture = 0f;
+        float secondHalfAvgAperture = 0f;
+        int half = blueprint.Gates.Count / 2;
+
+        for (int i = 0; i < half; i++)
+            firstHalfAvgAperture += result.Gates[i].ApertureHeight;
+        for (int i = half; i < blueprint.Gates.Count; i++)
+            secondHalfAvgAperture += result.Gates[i].ApertureHeight;
+
+        firstHalfAvgAperture /= half;
+        secondHalfAvgAperture /= (blueprint.Gates.Count - half);
+
+        Assert.True(firstHalfAvgAperture > secondHalfAvgAperture,
+            "Crescendo: first half should have wider apertures than second half.");
+    }
+
+    [Fact]
+    public void SegmentBias_Valley_MiddleHardest()
+    {
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0.5f, shape: 1);
+        var result = mutator.Apply(blueprint);
+
+        // Valley shape: d={-1, +1, -1} for S=3
+        // Middle segment (gates 4-7) should be harder (narrower aperture)
+        // than the end segments
+        float seg0AvgAperture = 0f;
+        float seg1AvgAperture = 0f;
+
+        for (int i = 0; i < 4; i++)
+            seg0AvgAperture += result.Gates[i].ApertureHeight;
+        for (int i = 4; i < 8; i++)
+            seg1AvgAperture += result.Gates[i].ApertureHeight;
+
+        seg0AvgAperture /= 4f;
+        seg1AvgAperture /= 4f;
+
+        Assert.True(seg0AvgAperture > seg1AvgAperture,
+            "Valley: end segments should have wider apertures than middle.");
+    }
+
+    [Fact]
+    public void SegmentBias_Wave_Alternating()
+    {
+        // Use S=4 for a meaningful wave pattern: d={-1, +1, -1, +1}
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator(segments: 4, amount: 0.5f, shape: 2);
+        var result = mutator.Apply(blueprint);
+
+        // N=12, S=4 → 3 gates per segment
+        // Seg 0 (gates 0-2): d=-1 (easier), Seg 1 (gates 3-5): d=+1 (harder)
+        // Seg 2 (gates 6-8): d=-1 (easier), Seg 3 (gates 9-11): d=+1 (harder)
+        for (int i = 0; i < 3; i++)
+        {
+            Assert.True(result.Gates[i].ApertureHeight > blueprint.Gates[i].ApertureHeight,
+                $"Gate {i} (seg 0, even): should be easier (wider).");
+        }
+        for (int i = 3; i < 6; i++)
+        {
+            Assert.True(result.Gates[i].ApertureHeight < blueprint.Gates[i].ApertureHeight,
+                $"Gate {i} (seg 1, odd): should be harder (narrower).");
+        }
+        for (int i = 6; i < 9; i++)
+        {
+            Assert.True(result.Gates[i].ApertureHeight > blueprint.Gates[i].ApertureHeight,
+                $"Gate {i} (seg 2, even): should be easier (wider).");
+        }
+        for (int i = 9; i < 12; i++)
+        {
+            Assert.True(result.Gates[i].ApertureHeight < blueprint.Gates[i].ApertureHeight,
+                $"Gate {i} (seg 3, odd): should be harder (narrower).");
+        }
+    }
+
+    [Fact]
+    public void SegmentBias_PreservesPosition()
+    {
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0.5f, shape: 0);
+        var result = mutator.Apply(blueprint);
+
+        for (int i = 0; i < result.Gates.Count; i++)
+        {
+            Assert.Equal(blueprint.Gates[i].WallX, result.Gates[i].WallX);
+            Assert.Equal(blueprint.Gates[i].RestCenterY, result.Gates[i].RestCenterY);
+            Assert.Equal(blueprint.Gates[i].Phase, result.Gates[i].Phase);
+        }
+    }
+
+    [Fact]
+    public void SegmentBias_PreservesBlueprintMetadata()
+    {
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator();
+        var result = mutator.Apply(blueprint);
+
+        Assert.Equal(blueprint.PlayfieldWidth, result.PlayfieldWidth);
+        Assert.Equal(blueprint.PlayfieldHeight, result.PlayfieldHeight);
+        Assert.Equal(blueprint.ScrollSpeed, result.ScrollSpeed);
+        Assert.Equal(blueprint.Gates.Count, result.Gates.Count);
+    }
+
+    [Fact]
+    public void SegmentBias_ZeroAmount_NoChange()
+    {
+        var blueprint = CreateTestBlueprint();
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0f, shape: 0);
+        var result = mutator.Apply(blueprint);
+
+        for (int i = 0; i < result.Gates.Count; i++)
+        {
+            Assert.Equal(blueprint.Gates[i].ApertureHeight, result.Gates[i].ApertureHeight);
+            Assert.Equal(blueprint.Gates[i].Amplitude, result.Gates[i].Amplitude);
+            Assert.Equal(blueprint.Gates[i].FreqHz, result.Gates[i].FreqHz);
+        }
+    }
+
+    [Fact]
+    public void SegmentBias_SingleGate_ReturnsClone()
+    {
+        var singleGateBlueprint = new LevelBlueprint
+        {
+            Gates = new[]
+            {
+                new Gate { WallX = 100f, RestCenterY = 540f, ApertureHeight = 200f,
+                    Amplitude = 40f, Phase = 1f, FreqHz = 0.5f },
+            },
+            PlayfieldWidth = 1920f,
+            PlayfieldHeight = 1080f,
+            ScrollSpeed = 70f,
+        };
+
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0.5f, shape: 0);
+        var result = mutator.Apply(singleGateBlueprint);
+
+        Assert.NotSame(singleGateBlueprint, result);
+        Assert.Equal(singleGateBlueprint.Gates[0].ApertureHeight, result.Gates[0].ApertureHeight);
+        Assert.Equal(singleGateBlueprint.Gates[0].Amplitude, result.Gates[0].Amplitude);
+        Assert.Equal(singleGateBlueprint.Gates[0].FreqHz, result.Gates[0].FreqHz);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(5)]
+    public void SegmentBias_InvalidSegments_Throws(int segments)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SegmentBiasMutator(segments: segments));
+    }
+
+    [Fact]
+    public void SegmentBias_InvalidAmount_Low_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SegmentBiasMutator(amount: -0.1f));
+    }
+
+    [Fact]
+    public void SegmentBias_InvalidAmount_High_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SegmentBiasMutator(amount: 1.1f));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(3)]
+    public void SegmentBias_InvalidShape_Throws(int shape)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SegmentBiasMutator(shape: shape));
+    }
+
+    [Fact]
+    public void SegmentBias_FromSpec_ReadsParams()
+    {
+        var spec = MutatorSpec.Create(MutatorId.SegmentBias,
+            parameters: new[]
+            {
+                new MutatorParam("amt", 0.5f),
+                new MutatorParam("seg", 2f),
+                new MutatorParam("shape", 1f),
+            });
+        var mutator = new SegmentBiasMutator(spec);
+        var blueprint = CreateTestBlueprint();
+        var result = mutator.Apply(blueprint);
+
+        // Valley shape with 2 segments: d={-1, -1} → both segments easier
+        // Wait — S=2, valley: t=0→d=-1, t=1→d=-1. Both segments get d=-1.
+        // apertureMul = 1 - 0.5*(-1) = 1.5 for both segments.
+        // All gates should be 1.5× wider.
+        for (int i = 0; i < result.Gates.Count; i++)
+        {
+            Assert.Equal(blueprint.Gates[i].ApertureHeight * 1.5f, result.Gates[i].ApertureHeight, precision: 3);
+        }
+    }
+
+    [Fact]
+    public void SegmentBias_FromSpec_DefaultsWhenNoParams()
+    {
+        var spec = MutatorSpec.Create(MutatorId.SegmentBias);
+        var specMutator = new SegmentBiasMutator(spec);
+        var directMutator = new SegmentBiasMutator();
+        var blueprint = CreateTestBlueprint();
+
+        var specResult = specMutator.Apply(blueprint);
+        var directResult = directMutator.Apply(blueprint);
+
+        for (int i = 0; i < specResult.Gates.Count; i++)
+        {
+            Assert.Equal(directResult.Gates[i].ApertureHeight, specResult.Gates[i].ApertureHeight);
+            Assert.Equal(directResult.Gates[i].Amplitude, specResult.Gates[i].Amplitude);
+            Assert.Equal(directResult.Gates[i].FreqHz, specResult.Gates[i].FreqHz);
+        }
+    }
+
+    [Fact]
+    public void SegmentBias_ApertureClampedToMinimum()
+    {
+        // Create blueprint with small aperture, apply max bias to make apertureMul = 0
+        var blueprint = new LevelBlueprint
+        {
+            Gates = new[]
+            {
+                new Gate { WallX = 100f, RestCenterY = 540f, ApertureHeight = 25f,
+                    Amplitude = 40f, Phase = 1f, FreqHz = 0.5f },
+                new Gate { WallX = 200f, RestCenterY = 540f, ApertureHeight = 25f,
+                    Amplitude = 40f, Phase = 2f, FreqHz = 0.5f },
+            },
+            PlayfieldWidth = 1920f,
+            PlayfieldHeight = 1080f,
+            ScrollSpeed = 70f,
+        };
+
+        // Crescendo, S=2, amt=1.0: seg 0 d=-1 (apertureMul=2), seg 1 d=+1 (apertureMul=0)
+        var mutator = new SegmentBiasMutator(segments: 2, amount: 1.0f, shape: 0);
+        var result = mutator.Apply(blueprint);
+
+        // Gate 1 (seg 1): aperture * 0 would be 0, but should clamp to 20f
+        Assert.Equal(20f, result.Gates[1].ApertureHeight);
+
+        // Gate 0 (seg 0): aperture * 2.0 = 50f (no clamp needed)
+        Assert.Equal(50f, result.Gates[0].ApertureHeight);
+    }
+
+    [Fact]
+    public void SegmentBias_Pipeline_OrderMatters()
+    {
+        var blueprint = CreateTestBlueprint();
+        var registry = CreateFullRegistry();
+        var pipeline = new MutatorPipeline(registry);
+
+        // SegmentBias(amt=1.0, crescendo) then NarrowMargin(0.1)
+        var specsAB = new[]
+        {
+            MutatorSpec.Create(MutatorId.SegmentBias,
+                parameters: new[] { new MutatorParam("amt", 1.0f) }),
+            MutatorSpec.Create(MutatorId.NarrowMargin,
+                parameters: new[] { new MutatorParam("factor", 0.1f) }),
+        };
+
+        // NarrowMargin(0.1) then SegmentBias(amt=1.0, crescendo)
+        var specsBA = new[]
+        {
+            MutatorSpec.Create(MutatorId.NarrowMargin,
+                parameters: new[] { new MutatorParam("factor", 0.1f) }),
+            MutatorSpec.Create(MutatorId.SegmentBias,
+                parameters: new[] { new MutatorParam("amt", 1.0f) }),
+        };
+
+        var resultAB = pipeline.Apply(blueprint, specsAB);
+        var resultBA = pipeline.Apply(blueprint, specsBA);
+
+        // With extreme params, the 20px aperture floor clamp in SegmentBias
+        // causes different results depending on order.
+        // AB: SegmentBias creates some apertures near 0→clamp to 20, then NarrowMargin scales to 2.
+        // BA: NarrowMargin first reduces to 10-20px range, then SegmentBias clamps more gates to 20.
+        bool anyDiffer = false;
+        for (int i = 0; i < resultAB.Gates.Count; i++)
+        {
+            if (MathF.Abs(resultAB.Gates[i].ApertureHeight - resultBA.Gates[i].ApertureHeight) > 0.001f)
+            {
+                anyDiffer = true;
+                break;
+            }
+        }
+
+        Assert.True(anyDiffer,
+            "SegmentBias+NarrowMargin vs NarrowMargin+SegmentBias should produce different results.");
+    }
+
+    [Fact]
+    public void SegmentBias_OriginalBlueprintUnchanged()
+    {
+        var blueprint = CreateTestBlueprint();
+
+        var originalApertures = new float[blueprint.Gates.Count];
+        var originalAmplitudes = new float[blueprint.Gates.Count];
+        var originalFreqs = new float[blueprint.Gates.Count];
+        for (int i = 0; i < blueprint.Gates.Count; i++)
+        {
+            originalApertures[i] = blueprint.Gates[i].ApertureHeight;
+            originalAmplitudes[i] = blueprint.Gates[i].Amplitude;
+            originalFreqs[i] = blueprint.Gates[i].FreqHz;
+        }
+
+        var mutator = new SegmentBiasMutator(segments: 3, amount: 0.5f, shape: 0);
+        _ = mutator.Apply(blueprint);
+
+        for (int i = 0; i < blueprint.Gates.Count; i++)
+        {
+            Assert.Equal(originalApertures[i], blueprint.Gates[i].ApertureHeight);
+            Assert.Equal(originalAmplitudes[i], blueprint.Gates[i].Amplitude);
+            Assert.Equal(originalFreqs[i], blueprint.Gates[i].FreqHz);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────
+    //  12. Registry — SegmentBias resolves
+    // ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void Registry_ResolvesSegmentBias()
+    {
+        var registry = CreateFullRegistry();
+        var spec = MutatorSpec.Create(MutatorId.SegmentBias);
+        var mutator = registry.Resolve(spec);
+        Assert.IsType<SegmentBiasMutator>(mutator);
+    }
+
+    // ─────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────
 
@@ -840,6 +1236,32 @@ public class BlueprintMutatorTests
         var generator = new ReflexGateGenerator();
         var run = RunDescriptor.Create(ModeId.ReflexGates, 0xC0FFEEu);
         return generator.Generate(run);
+    }
+
+    private static LevelBlueprint CreateBlueprintWithGateCount(int gateCount)
+    {
+        var gates = new Gate[gateCount];
+        for (int i = 0; i < gateCount; i++)
+        {
+            float t = gateCount <= 1 ? 0f : (float)i / (gateCount - 1);
+            gates[i] = new Gate
+            {
+                WallX = 400f + i * 150f,
+                RestCenterY = 540f,
+                ApertureHeight = 200f - t * 100f,  // 200 → 100 linear ramp
+                Amplitude = 20f + t * 40f,          // 20 → 60 linear ramp
+                Phase = i * 0.5f,
+                FreqHz = 0.3f + t * 0.4f,           // 0.3 → 0.7 linear ramp
+            };
+        }
+
+        return new LevelBlueprint
+        {
+            Gates = gates,
+            PlayfieldWidth = 1920f,
+            PlayfieldHeight = 1080f,
+            ScrollSpeed = 70f,
+        };
     }
 
     private static MutatorRegistry CreateDefaultRegistry()
@@ -856,6 +1278,7 @@ public class BlueprintMutatorTests
         var registry = CreateDefaultRegistry();
         registry.Register(MutatorId.RhythmLock, 1, spec => new RhythmLockMutator(spec));
         registry.Register(MutatorId.GateJitter, 1, spec => new GateJitterMutator(spec));
+        registry.Register(MutatorId.SegmentBias, 1, spec => new SegmentBiasMutator(spec));
         return registry;
     }
 }

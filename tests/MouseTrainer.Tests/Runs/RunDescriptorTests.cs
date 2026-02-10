@@ -428,4 +428,55 @@ public class RunDescriptorTests
     {
         Assert.Equal("GateJitter", MutatorId.GateJitter.Value);
     }
+
+    // ─────────────────────────────────────────────────────
+    //  23. Golden hashes — SegmentBias mutator
+    // ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void Create_SegmentBias_NoParams_ProducesStableHash()
+    {
+        var run = RunDescriptor.Create(
+            ModeId.ReflexGates,
+            seed: 0xC0FFEEu,
+            DifficultyTier.Standard,
+            generatorVersion: 1,
+            rulesetVersion: 1,
+            mutators: new[] { MutatorSpec.Create(MutatorId.SegmentBias) });
+
+        Assert.Equal(0xEFF3DC2ECE2A2A2CUL, run.Id.Value);
+    }
+
+    [Fact]
+    public void Create_SegmentBias_WithParams_ProducesStableHash()
+    {
+        var run = RunDescriptor.Create(
+            ModeId.ReflexGates,
+            seed: 0xC0FFEEu,
+            DifficultyTier.Standard,
+            generatorVersion: 1,
+            rulesetVersion: 1,
+            mutators: new[]
+            {
+                MutatorSpec.Create(MutatorId.SegmentBias,
+                    parameters: new[]
+                    {
+                        new MutatorParam("amt", 0.5f),
+                        new MutatorParam("seg", 2f),
+                        new MutatorParam("shape", 1f),
+                    }),
+            });
+
+        Assert.Equal(0xC21CE9EAB1A934EDUL, run.Id.Value);
+    }
+
+    // ─────────────────────────────────────────────────────
+    //  24. MutatorId well-known values — Phase 4C1c
+    // ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void MutatorId_SegmentBias_HasExpectedValue()
+    {
+        Assert.Equal("SegmentBias", MutatorId.SegmentBias.Value);
+    }
 }
