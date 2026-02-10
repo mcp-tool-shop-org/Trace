@@ -267,8 +267,8 @@ public partial class MainPage : ContentPage
         _overlayState.Combo = 0;
         _overlayState.LastResult = null;
 
-        // Start ambient music loop
-        _sink.StartLoop(new AudioCue("amb_zen_loop.wav", Volume: 0.25f, Loop: true), "amb");
+        // Ambient music disabled by default (too harsh for current mode)
+        // _sink.StartLoop(new AudioCue("amb_zen_loop.wav", Volume: 0.25f, Loop: true), "amb");
 
         ActionButton.Text = "Playing...";
         ActionButton.IsEnabled = false;
