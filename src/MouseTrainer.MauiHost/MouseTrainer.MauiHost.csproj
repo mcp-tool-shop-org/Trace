@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0-windows10.0.19041.0;net8.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks>net8.0-windows10.0.19041.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>MouseTrainer.MauiHost</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -17,7 +17,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MouseTrainer.Core\MouseTrainer.Core.csproj" />
+    <ProjectReference Include="..\MouseTrainer.Domain\MouseTrainer.Domain.csproj" />
+    <ProjectReference Include="..\MouseTrainer.Simulation\MouseTrainer.Simulation.csproj" />
+    <ProjectReference Include="..\MouseTrainer.Audio\MouseTrainer.Audio.csproj" />
   </ItemGroup>
 
   <ItemGroup>
