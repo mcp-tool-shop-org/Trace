@@ -1,4 +1,5 @@
 using MouseTrainer.Domain.Runs;
+using MouseTrainer.Simulation.Replay;
 
 namespace MouseTrainer.Simulation.Session;
 
@@ -34,4 +35,5 @@ public sealed record SessionResult(
     int GatesTotal,
     IReadOnlyList<GateResult> Gates,
     RunId? RunId = null,
-    ScoreBreakdown? Breakdown = null);
+    ScoreBreakdown? Breakdown = null,
+    VerificationHash? EventHash = null);

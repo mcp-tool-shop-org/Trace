@@ -2,6 +2,8 @@ using System.Diagnostics;
 using MouseTrainer.Domain.Events;
 using MouseTrainer.Domain.Runs;
 using MouseTrainer.Domain.Scoring;
+using MouseTrainer.Domain.Utility;
+using MouseTrainer.Simulation.Replay;
 
 namespace MouseTrainer.Simulation.Session;
 
@@ -21,6 +23,7 @@ public sealed class SessionController
     private int _totalScore;
     private readonly List<GateResult> _gateResults = new(capacity: 16);
     private readonly List<ScoreDelta> _deltas = new(capacity: 16);
+    private ulong _eventHash = Fnv1a.OffsetBasis;
     private RunDescriptor? _runDescriptor;
 
     public SessionState State => _state;
@@ -46,6 +49,7 @@ public sealed class SessionController
         _totalScore = 0;
         _gateResults.Clear();
         _deltas.Clear();
+        _eventHash = Fnv1a.OffsetBasis;
     }
 
     /// <summary>
@@ -63,6 +67,7 @@ public sealed class SessionController
         _totalScore = 0;
         _gateResults.Clear();
         _deltas.Clear();
+        _eventHash = Fnv1a.OffsetBasis;
     }
 
     /// <summary>
@@ -86,6 +91,8 @@ public sealed class SessionController
 
         foreach (var ev in events)
         {
+            _eventHash = EventStreamHasher.FoldEvent(_eventHash, ev);
+
             switch (ev.Type)
             {
                 case GameEventType.EnteredGate:
@@ -161,6 +168,7 @@ public sealed class SessionController
             _gatesTotal,
             _gateResults.AsReadOnly(),
             _runDescriptor?.Id,
-            ScoreBreakdown.FromDeltas(_deltas));
+            ScoreBreakdown.FromDeltas(_deltas),
+            new VerificationHash(_eventHash));
     }
 }
