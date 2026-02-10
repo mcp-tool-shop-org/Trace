@@ -9,8 +9,8 @@
 
 | Module | Assembly | Purpose |
 |--------|----------|---------|
-| **Domain** | `MouseTrainer.Domain` | Shared primitives: events, input, utility |
-| **Simulation** | `MouseTrainer.Simulation` | Deterministic game loop, modes, debug overlay |
+| **Domain** | `MouseTrainer.Domain` | Shared primitives: events, input, run identity, RNG |
+| **Simulation** | `MouseTrainer.Simulation` | Deterministic game loop, modes, levels, mutators, session |
 | **Audio** | `MouseTrainer.Audio` | Cue system, asset manifest, verification |
 | **App (MAUI)** | `MouseTrainer.MauiHost` | Platform host — wires everything together |
 
@@ -32,6 +32,7 @@ MouseTrainer.MauiHost      --> Domain + Simulation + Audio
 - `Domain` must **never** reference any sibling module
 - No library module may reference `Microsoft.Maui.*` or any platform SDK
 - No "mode" (`Simulation.Modes.*`) may reference another mode
+- No "mutator" (`Simulation.Mutators.*`) may reference `Simulation.Modes.*` directly (mutators operate on `LevelBlueprint`, not mode internals)
 
 ---
 
@@ -43,9 +44,13 @@ Flat namespaces — no stutter (e.g., no `MouseTrainer.Audio.Audio`).
 |-------------|-----------|
 | `Domain/Events/` | `MouseTrainer.Domain.Events` |
 | `Domain/Input/` | `MouseTrainer.Domain.Input` |
+| `Domain/Runs/` | `MouseTrainer.Domain.Runs` |
 | `Domain/Utility/` | `MouseTrainer.Domain.Utility` |
 | `Simulation/Core/` | `MouseTrainer.Simulation.Core` |
+| `Simulation/Levels/` | `MouseTrainer.Simulation.Levels` |
 | `Simulation/Modes/ReflexGates/` | `MouseTrainer.Simulation.Modes.ReflexGates` |
+| `Simulation/Mutators/` | `MouseTrainer.Simulation.Mutators` |
+| `Simulation/Session/` | `MouseTrainer.Simulation.Session` |
 | `Simulation/Debug/` | `MouseTrainer.Simulation.Debug` |
 | `Audio/Core/` | `MouseTrainer.Audio.Core` |
 | `Audio/Assets/` | `MouseTrainer.Audio.Assets` |
@@ -70,13 +75,71 @@ Defined in `src/Directory.Build.props`:
 
 ---
 
+## Blueprint Mutator System
+
+Mutators are pure functions over `LevelBlueprint` — they compose via an ordered fold in `MutatorPipeline`. The system lives in `Simulation/Mutators/` with protocol-grade identity types in `Domain/Runs/`.
+
+### Key Types
+
+| Type | Module | Role |
+|------|--------|------|
+| `MutatorId` | Domain | Permanent string identifier (frozen once created) |
+| `MutatorSpec` | Domain | Id + version + sorted parameter list |
+| `MutatorParam` | Domain | Key-value pair (string key, float value) |
+| `IBlueprintMutator` | Simulation | `LevelBlueprint Apply(LevelBlueprint)` interface |
+| `MutatorPipeline` | Simulation | Resolves specs → mutators, applies as ordered fold |
+| `MutatorRegistry` | Simulation | Factory registry: `(MutatorId, version) → Func<MutatorSpec, IBlueprintMutator>` |
+
+### Registered Mutators (6)
+
+| Id | Class | Category |
+|----|-------|----------|
+| `NarrowMargin` | `NarrowMarginMutator` | Scaling (aperture down) |
+| `WideMargin` | `WideMarginMutator` | Scaling (aperture up) |
+| `DifficultyCurve` | `DifficultyCurveMutator` | Reshaping (difficulty remap by index) |
+| `RhythmLock` | `RhythmLockMutator` | Timing (phase quantization) |
+| `GateJitter` | `GateJitterMutator` | Spatial (deterministic vertical offset) |
+| `SegmentBias` | `SegmentBiasMutator` | Structural (per-segment difficulty acts) |
+
+### Purity Constraint
+
+Mutators may only read their own parameters and the input `LevelBlueprint`. They must NOT:
+- Access RNG state
+- Read RunId or seed
+- Reference mode-specific types (only `LevelBlueprint` and `Gate`)
+- Produce side effects
+
+This ensures mutator parameters are frozen into the `RunId` hash and runs are fully reproducible.
+
+---
+
+## Run Identity System
+
+The `Domain/Runs/` namespace contains protocol-grade types for deterministic run identity:
+
+| Type | Role |
+|------|------|
+| `RunDescriptor` | Combines ModeId + seed + mutator specs → computes RunId |
+| `RunId` | FNV-1a 64-bit hash — platform-stable, permanent |
+| `ModeId` | String-based game mode identifier |
+| `DifficultyTier` | Enum for difficulty classification |
+
+Same `ModeId` + seed + mutator specs → same `RunId` on every platform. Parameters are canonically sorted by key before hashing.
+
+---
+
 ## Enforcement Roadmap
 
-### Current (Phase 2A)
+### Complete
 
-- [x] Module split with enforced project references
+- [x] Module split with enforced project references (Phase 2A)
 - [x] `Directory.Build.props` with nullable + warnings-as-errors
 - [x] This manifesto (constitutional documentation)
+- [x] RunDescriptor + LevelBlueprint generator pipeline (Phase 4AB)
+- [x] Blueprint mutator system with registry + pipeline (Phase 4C1)
+- [x] RhythmLock + GateJitter structural mutators (Phase 4C1b)
+- [x] SegmentBias structural mutator (Phase 4C1c)
+- [x] 214 tests: architecture boundaries, determinism replay, persistence, mutators, runs, levels
 
 ### Next (Phase 2C — ArchTests)
 
@@ -98,6 +161,18 @@ Defined in `src/Directory.Build.props`:
 4. Only reference `MouseTrainer.Simulation.Core` and `MouseTrainer.Domain.*`
 5. Wire in `MauiHost` — the host is the only composition root
 6. Never reference other modes directly
+
+---
+
+## Adding a New Mutator
+
+1. Create class in `Simulation/Mutators/`: implement `IBlueprintMutator`
+2. Add static `MutatorId` in `Domain/Runs/MutatorId.cs` (permanent — never rename)
+3. Two constructors: direct params + `MutatorSpec` (for registry resolution)
+4. Register in `MauiHost/MainPage.xaml.cs` via `mutatorRegistry.Register()`
+5. Add golden hash tests in `RunDescriptorTests.cs`
+6. Add correctness + composition tests in `BlueprintMutatorTests.cs`
+7. Update `CreateFullRegistry()` test helper
 
 ---
 
