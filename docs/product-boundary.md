@@ -35,6 +35,8 @@ Anyone who wants to build real cursor discipline — anticipation, timing, stabi
 | [Chaos Behavior State Machines](chaos-behavior-state-machines.md) | Per-archetype FSMs (enum + transition ready) |
 | [Renderer Integration (Chaos)](renderer-integration-chaos.md) | ChaosRenderProfile, per-archetype draw specs |
 | [Interaction Rendering Canon](interaction-rendering-canon.md) | Trace-vs-Chaos interaction contract |
+| [Sound Design Bible](sound-design-bible.md) | Audio metaphysics, Trace/Chaos sound identity, mastery = silence |
+| [Procedural Audio Parameter Map](procedural-audio-parameter-map.md) | Simulation → audio parameter wiring |
 | [Sandbox Drift Field v1](sandbox-drift-field-v1.md) | First villain proof (DriftDelivery_B1) |
 
 ---

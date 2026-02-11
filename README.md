@@ -116,10 +116,11 @@ src/
     Core/                       AudioDirector, AudioCue, AudioCueMap, IAudioSink
 
   MouseTrainer.MauiHost/        MAUI composition root (Windows)
-                                GameRenderer, NeonPalette, TrailBuffer, ParticleSystem
+                                GameRenderer, NeonPalette, TrailBuffer, ParticleSystem,
+                                MotionAnalyzer, ScreenShake
 
 tests/
-  MouseTrainer.Tests/           329 tests across 10 categories
+  MouseTrainer.Tests/           340 tests across 11 categories
     Architecture/               Dependency boundary enforcement
     Determinism/                Replay regression, RNG, session controller
     Levels/                     Generator extraction
@@ -131,7 +132,7 @@ tests/
     Utility/                    Leb128 encoding
     MotionStateTests.cs         State machine transitions + forbidden paths
 
-docs/                           14 design documents (see Design Canon below)
+docs/                           16 design documents (see Design Canon below)
 ```
 
 ---
@@ -151,6 +152,8 @@ docs/                           14 design documents (see Design Canon below)
 | [`chaos-behavior-state-machines.md`](docs/chaos-behavior-state-machines.md) | Per-archetype FSMs (enum + transition ready) |
 | [`renderer-integration-chaos.md`](docs/renderer-integration-chaos.md) | ChaosRenderProfile, per-archetype draw specs |
 | [`interaction-rendering-canon.md`](docs/interaction-rendering-canon.md) | Trace-vs-Chaos interaction contract |
+| [`sound-design-bible.md`](docs/sound-design-bible.md) | Audio metaphysics, Trace/Chaos sound identity, mastery = silence |
+| [`procedural-audio-parameter-map.md`](docs/procedural-audio-parameter-map.md) | Simulation → audio parameter wiring |
 | [`sandbox-drift-field-v1.md`](docs/sandbox-drift-field-v1.md) | First villain proof (DriftDelivery_B1) |
 | [`modular.manifesto.md`](docs/modular.manifesto.md) | Dependency graph + constitutional rules |
 | [`MAUI_AssetOpener_Snippet.md`](docs/MAUI_AssetOpener_Snippet.md) | Platform asset wiring snippet |
@@ -163,7 +166,7 @@ docs/                           14 design documents (see Design Canon below)
 # Build simulation library (0 warnings, TreatWarningsAsErrors)
 dotnet build src/MouseTrainer.Simulation/
 
-# Run all 329 tests
+# Run all 340 tests
 dotnet test tests/MouseTrainer.Tests/
 
 # Run MAUI host (Windows — use Visual Studio, set startup to MauiHost)
