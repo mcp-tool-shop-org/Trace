@@ -140,12 +140,17 @@ public sealed class GameRenderer : IDrawable
         canvas.DrawString("SANDBOX MODE",
             rect.Width * 0.5f, rect.Height * 0.45f, HorizontalAlignment.Center);
 
-        // Pulsing prompt
+        // Pulsing start prompt (click anywhere to begin)
         float pulse = 0.4f + 0.6f * MathF.Abs(MathF.Sin((float)Environment.TickCount64 * 0.003f));
-        canvas.FontSize = 18;
+        canvas.FontSize = 20;
         canvas.FontColor = NeonPalette.Lime.WithAlpha(pulse);
-        canvas.DrawString("PRESS START",
-            rect.Width * 0.5f, rect.Height * 0.58f, HorizontalAlignment.Center);
+        canvas.DrawString("START",
+            rect.Width * 0.5f, rect.Height * 0.56f, HorizontalAlignment.Center);
+
+        canvas.FontSize = 10;
+        canvas.FontColor = NeonPalette.TextMuted;
+        canvas.DrawString("click anywhere",
+            rect.Width * 0.5f, rect.Height * 0.62f, HorizontalAlignment.Center);
     }
 
     // ══════════════════════════════════════════════════════

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Reflection;
+using Microsoft.UI.Input;
 using MouseTrainer.Audio.Assets;
 using MouseTrainer.Audio.Core;
 using MouseTrainer.Domain.Events;
@@ -40,6 +42,7 @@ public partial class MainPage : ContentPage
 
     // --- Sandbox state ---
     private bool _running;
+    private bool _cursorHidden;
 
     public MainPage()
     {
@@ -88,7 +91,23 @@ public partial class MainPage : ContentPage
 
             _overlayState.CursorX = _latestX;
             _overlayState.CursorY = _latestY;
+
+            // Hide system cursor while over the canvas in running mode
+            if (_running && !_cursorHidden)
+                HideSystemCursor();
+
             OverlayView.Invalidate();
+        };
+
+        ptr.PointerEntered += (_, _) =>
+        {
+            if (_running)
+                HideSystemCursor();
+        };
+
+        ptr.PointerExited += (_, _) =>
+        {
+            ShowSystemCursor();
         };
 
         ptr.PointerPressed += (_, e) =>
@@ -102,6 +121,11 @@ public partial class MainPage : ContentPage
             }
             _primaryDown = true;
             _overlayState.PrimaryDown = true;
+
+            // Click-to-start from idle screen
+            if (!_running)
+                StartSandbox();
+
             OverlayView.Invalidate();
         };
 
@@ -149,14 +173,6 @@ public partial class MainPage : ContentPage
     //  Sandbox controls
     // ------------------------------------------------------------------
 
-    private void OnActionClicked(object sender, EventArgs e)
-    {
-        if (_running)
-            StopSandbox();
-        else
-            StartSandbox();
-    }
-
     private void StartSandbox()
     {
         _loop.Reset(0);
@@ -173,27 +189,7 @@ public partial class MainPage : ContentPage
         _timer.Start();
 
         _overlayState.SessionPhase = SandboxPhase.Running;
-        ActionButton.Text = "Stop";
-        ActionButton.BackgroundColor = Color.FromArgb("#FF5722");
-        StatusLabel.Text = "Running";
-        StatusLabel.TextColor = Color.FromArgb("#4CAF50");
-
         AppendLog("> Sandbox started.");
-    }
-
-    private void StopSandbox()
-    {
-        StopTimer();
-        _running = false;
-
-        _overlayState.SessionPhase = SandboxPhase.Idle;
-        ActionButton.Text = "Start";
-        ActionButton.BackgroundColor = Color.FromArgb("#4CAF50");
-        StatusLabel.Text = "Idle";
-        StatusLabel.TextColor = Color.FromArgb("#888888");
-
-        OverlayView.Invalidate();
-        AppendLog("> Sandbox stopped.");
     }
 
     private void StopTimer()
@@ -272,6 +268,54 @@ public partial class MainPage : ContentPage
             LogLabel.Text += line + Environment.NewLine;
         });
     }
+
+    // ------------------------------------------------------------------
+    //  System cursor hide/show (WinUI ProtectedCursor via reflection)
+    // ------------------------------------------------------------------
+
+    private void HideSystemCursor()
+    {
+        if (_cursorHidden) return;
+
+        // Set ProtectedCursor to a disposed InputSystemCursor on both the
+        // GraphicsView and Border platform views. A disposed cursor renders
+        // as invisible — the recommended WinUI 3 hack for cursor hiding.
+        bool set = false;
+        foreach (var mauiView in new VisualElement[] { OverlayView, GameSurface })
+        {
+            if (mauiView.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement uiElem)
+            {
+                var deadCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+                SetProtectedCursor(uiElem, deadCursor);
+                deadCursor.Dispose();
+                set = true;
+            }
+        }
+
+        _cursorHidden = set;
+    }
+
+    private void ShowSystemCursor()
+    {
+        if (!_cursorHidden) return;
+
+        foreach (var mauiView in new VisualElement[] { OverlayView, GameSurface })
+        {
+            if (mauiView.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement uiElem)
+                SetProtectedCursor(uiElem, InputSystemCursor.Create(InputSystemCursorShape.Arrow));
+        }
+
+        _cursorHidden = false;
+    }
+
+    private static readonly PropertyInfo? s_protectedCursorProp =
+        typeof(Microsoft.UI.Xaml.UIElement).GetProperty("ProtectedCursor",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+    private static void SetProtectedCursor(Microsoft.UI.Xaml.UIElement element, InputCursor? cursor)
+    {
+        s_protectedCursorProp?.SetValue(element, cursor);
+    }
 }
 
 /// <summary>
@@ -282,3 +326,4 @@ internal sealed class NullSimulation : IGameSimulation
     public void Reset(uint sessionSeed) { }
     public void FixedUpdate(long tick, float dt, in PointerInput input, List<GameEvent> events) { }
 }
+

@@ -3,44 +3,22 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MouseTrainer.MauiHost.MainPage"
              Title="Mouse Trainer">
-    <Grid RowDefinitions="Auto,*,Auto,Auto" Padding="0" RowSpacing="0">
+    <Grid RowDefinitions="*,Auto" Padding="0" RowSpacing="0">
 
-        <!-- Header -->
-        <Grid Grid.Row="0" Padding="16,12" BackgroundColor="#1B1E28">
-            <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
-                <Label Text="Mouse Trainer"
-                       FontSize="18"
-                       FontAttributes="Bold"
-                       TextColor="White" />
-                <Label x:Name="StatusLabel"
-                       Text="Idle"
-                       FontSize="14"
-                       TextColor="#888"
-                       VerticalOptions="Center" />
-            </HorizontalStackLayout>
-        </Grid>
-
-        <!-- Game surface: pointer events + renderer -->
+        <!-- Game surface: full canvas, pointer events + renderer -->
         <Border x:Name="GameSurface"
-                Grid.Row="1"
+                Grid.Row="0"
                 Stroke="Transparent"
-                StrokeThickness="1"
+                StrokeThickness="0"
                 BackgroundColor="#0D0F14"
                 Padding="0">
             <GraphicsView x:Name="OverlayView" />
         </Border>
 
-        <!-- Log (compact) -->
-        <ScrollView Grid.Row="2" HeightRequest="120" BackgroundColor="#111318">
+        <!-- Log (compact, collapsible later) -->
+        <ScrollView Grid.Row="1" HeightRequest="80" BackgroundColor="#111318">
             <Label x:Name="LogLabel" FontFamily="Consolas" FontSize="11"
                    TextColor="#8A8" LineBreakMode="WordWrap" Padding="8,4" />
         </ScrollView>
-
-        <!-- Controls -->
-        <HorizontalStackLayout Grid.Row="3" Spacing="12" Padding="16,8"
-                               BackgroundColor="#1B1E28">
-            <Button x:Name="ActionButton" Text="Start" Clicked="OnActionClicked"
-                    BackgroundColor="#4CAF50" TextColor="White" />
-        </HorizontalStackLayout>
     </Grid>
 </ContentPage>
