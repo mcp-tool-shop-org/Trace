@@ -22,10 +22,11 @@
     <ProjectReference Include="..\..\src\MouseTrainer.Audio\MouseTrainer.Audio.csproj" />
   </ItemGroup>
 
-  <!-- Compile-link MauiHost persistence files (can't reference MAUI project from net8.0) -->
+  <!-- Compile-link MauiHost files (can't reference MAUI project from net10.0 test project) -->
   <ItemGroup>
     <Compile Include="..\..\src\MouseTrainer.MauiHost\SessionStore.cs" Link="Linked\SessionStore.cs" />
     <Compile Include="..\..\src\MouseTrainer.MauiHost\StatsModels.cs" Link="Linked\StatsModels.cs" />
+    <Compile Include="..\..\src\MouseTrainer.MauiHost\MotionAnalyzer.cs" Link="Linked\MotionAnalyzer.cs" />
   </ItemGroup>
 
 </Project>

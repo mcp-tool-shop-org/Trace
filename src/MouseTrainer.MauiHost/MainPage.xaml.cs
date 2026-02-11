@@ -24,6 +24,7 @@ public partial class MainPage : ContentPage
     private readonly TrailBuffer _trailBuffer = new(16);
     private readonly ParticleSystem _particles = new(32);
     private readonly ScreenShake _shake = new();
+    private readonly MotionAnalyzer _motionAnalyzer = new();
 
     // --- Persistence ---
     private readonly SessionStore _store;
@@ -43,6 +44,12 @@ public partial class MainPage : ContentPage
     // --- Sandbox state ---
     private bool _running;
     private bool _cursorHidden;
+
+    // --- Recovery desaturation ---
+    private float _recoveryDesatTimer;
+    private bool _wasUnstable;
+    private const float UnstableThreshold = 0.4f;
+    private const float DesatDuration = 0.15f; // 150ms
 
     public MainPage()
     {
@@ -181,6 +188,9 @@ public partial class MainPage : ContentPage
         _trailBuffer.Clear();
         _particles.Clear();
         _shake.Clear();
+        _motionAnalyzer.Reset();
+        _wasUnstable = false;
+        _recoveryDesatTimer = 0f;
         _running = true;
 
         _timer = Dispatcher.CreateTimer();
@@ -230,12 +240,49 @@ public partial class MainPage : ContentPage
         _particles.Update(dt);
         _shake.Update(dt, _overlayState);
 
+        // Derive stability from cursor kinematics
+        _motionAnalyzer.Update(_latestX, _latestY, dt);
+        _overlayState.Stability = _motionAnalyzer.Stability;
+
+        // Recovery desaturation: trigger when stability dips and recovers
+        UpdateRecoveryDesaturation(dt);
+
         _frame++;
         if (_frame % 2 == 0)
             OverlayView.Invalidate();
 
         if (_frame % 300 == 0)
-            AppendLog($"> tick={result.Tick} pos=({_latestX:0},{_latestY:0}) primary={_primaryDown}");
+            AppendLog($"> tick={result.Tick} pos=({_latestX:0},{_latestY:0}) stab={_motionAnalyzer.Stability:F2}");
+    }
+
+    // ------------------------------------------------------------------
+    //  Recovery desaturation (visual-only feedback)
+    // ------------------------------------------------------------------
+
+    private void UpdateRecoveryDesaturation(float dt)
+    {
+        float stability = _motionAnalyzer.Stability;
+
+        if (stability < UnstableThreshold)
+            _wasUnstable = true;
+
+        if (_wasUnstable && stability >= UnstableThreshold)
+        {
+            // Stability recovered → trigger desaturation fade
+            _recoveryDesatTimer = DesatDuration;
+            _wasUnstable = false;
+        }
+
+        if (_recoveryDesatTimer > 0f)
+        {
+            _recoveryDesatTimer -= dt;
+            if (_recoveryDesatTimer < 0f) _recoveryDesatTimer = 0f;
+            _overlayState.RecoveryDesaturation = _recoveryDesatTimer / DesatDuration;
+        }
+        else
+        {
+            _overlayState.RecoveryDesaturation = 0f;
+        }
     }
 
     // ------------------------------------------------------------------

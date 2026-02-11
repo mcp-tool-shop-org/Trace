@@ -48,6 +48,16 @@ public sealed class RendererState
 
     // ── Motion state (Trace identity) ──────────────────
     public MotionState MotionState;
+
+    // ── Force vector (from Drift Field, zero in sandbox) ──
+    public float ForceX;
+    public float ForceY;
+
+    // ── Stability scalar (from MotionAnalyzer, 1.0 = calm) ──
+    public float Stability = 1f;
+
+    // ── Recovery desaturation (0 = none, 1 = peak desat) ──
+    public float RecoveryDesaturation;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -291,30 +301,63 @@ public sealed class GameRenderer : IDrawable
         float cy = oy + _s.CursorY * scale;
 
         // Color-by-state: each motion state shifts Trace's visual identity
-        var (coreColor, glowColor, edgeAlpha) = GetMotionStateColors(_s.MotionState);
+        var (coreColor, glowColor, edgeAlpha, glowMult) = GetMotionStateColors(_s.MotionState);
+
+        // ── Glow × Stability ──────────────────────────────
+        // Calm play glows. Panic dims. Canon: glowStrength = StabilityScalar × GlowMultiplier
+        float stability = _s.Stability;
+        float glowAlpha = glowColor.Alpha * (0.3f + 0.7f * stability) * (1f + glowMult);
+        float edgeEffective = edgeAlpha * (0.5f + 0.5f * stability);
+
+        // ── Recovery desaturation ─────────────────────────
+        // Brief desat when stability dips then recovers. "I corrected."
+        if (_s.RecoveryDesaturation > 0f)
+        {
+            float d = _s.RecoveryDesaturation;
+            coreColor = NeonPalette.Lerp(coreColor, NeonPalette.TextDim, d * 0.3f);
+            glowAlpha *= (1f - d * 0.5f);
+        }
 
         // Override core to Lime when clicking (PrimaryDown)
         if (_s.PrimaryDown)
             coreColor = NeonPalette.Lime;
 
-        // Outer glow
-        canvas.FillColor = glowColor;
-        canvas.FillCircle(cx, cy, 14);
+        // ── Directional bias (force opposition) ───────────
+        // When ForceVector is nonzero, glow layers shift opposite the force.
+        // Core dot stays centered — Trace's anchor point.
+        float biasX = 0f, biasY = 0f;
+        float forceMagSq = _s.ForceX * _s.ForceX + _s.ForceY * _s.ForceY;
+        if (forceMagSq > 0.001f)
+        {
+            float forceMag = MathF.Sqrt(forceMagSq);
+            float invMag = 1f / forceMag;
 
-        // Mid glow (edge)
-        canvas.FillColor = coreColor.WithAlpha(edgeAlpha);
-        canvas.FillCircle(cx, cy, 8);
+            // Bias opposes force, scaled by magnitude, dampened by stability
+            float biasFactor = forceMag * 3f * (1f - stability * 0.5f);
+            biasX = -_s.ForceX * invMag * biasFactor * scale;
+            biasY = -_s.ForceY * invMag * biasFactor * scale;
+        }
 
-        // Core dot
+        // ── Draw layers ───────────────────────────────────
+        // Outer glow (soft halo, biased by force)
+        canvas.FillColor = glowColor.WithAlpha(MathF.Max(0f, MathF.Min(1f, glowAlpha)));
+        canvas.FillCircle(cx + biasX, cy + biasY, 14);
+
+        // Mid glow (edge, half bias)
+        canvas.FillColor = coreColor.WithAlpha(MathF.Max(0f, MathF.Min(1f, edgeEffective)));
+        canvas.FillCircle(cx + biasX * 0.5f, cy + biasY * 0.5f, 8);
+
+        // Core dot (always centered, always visible)
         canvas.FillColor = coreColor;
         canvas.FillCircle(cx, cy, 4);
     }
 
     /// <summary>
     /// Maps MotionState to Trace's visual language.
-    /// Returns (coreColor, outerGlowColor, edgeMidAlpha).
+    /// Returns (coreColor, outerGlowColor, edgeMidAlpha, glowMultiplier).
+    /// GlowMultiplier from spec: Alignment=0.1, Commitment=0.15, Resistance=0.2, Correction=0.25, Recovery=0.
     /// </summary>
-    private static (Color core, Color glow, float edgeAlpha) GetMotionStateColors(MotionState state)
+    private static (Color core, Color glow, float edgeAlpha, float glowMult) GetMotionStateColors(MotionState state)
     {
         return state switch
         {
@@ -322,33 +365,38 @@ public sealed class GameRenderer : IDrawable
             MotionState.Alignment => (
                 NeonPalette.Cyan,
                 NeonPalette.CyanGlow,
-                0.3f),
+                0.3f,
+                0.1f),
 
             // Correction: edge brightens — Trace is "thinking"
             MotionState.Correction => (
                 NeonPalette.Cyan,
                 NeonPalette.CyanGlow,
-                0.55f),
+                0.55f,
+                0.25f),
 
             // Commitment: forward bias tint — slight warmth toward intent
             MotionState.Commitment => (
                 NeonPalette.Lerp(NeonPalette.Cyan, Colors.White, 0.15f),
                 NeonPalette.Cyan.WithAlpha(0.20f),
-                0.35f),
+                0.35f,
+                0.15f),
 
             // Resistance: counterforce gradient — dim on force side, bright on counter
             MotionState.Resistance => (
                 NeonPalette.Lerp(NeonPalette.Cyan, NeonPalette.Amber, 0.12f),
                 NeonPalette.Amber.WithAlpha(0.10f),
-                0.4f),
+                0.4f,
+                0.2f),
 
             // Recovery: brief desaturation — humility, not drama
             MotionState.Recovery => (
                 NeonPalette.Lerp(NeonPalette.Cyan, NeonPalette.TextDim, 0.3f),
                 NeonPalette.CyanGlow.WithAlpha(0.08f),
-                0.2f),
+                0.2f,
+                0f),
 
-            _ => (NeonPalette.Cyan, NeonPalette.CyanGlow, 0.3f),
+            _ => (NeonPalette.Cyan, NeonPalette.CyanGlow, 0.3f, 0.1f),
         };
     }
 
@@ -365,6 +413,12 @@ public sealed class GameRenderer : IDrawable
         canvas.FontColor = NeonPalette.TextDim;
         canvas.DrawString($"({_s.CursorX:0}, {_s.CursorY:0})",
             ox + 16, hudY, HorizontalAlignment.Left);
+
+        // Stability readout (center)
+        canvas.FontSize = 12;
+        canvas.FontColor = NeonPalette.Lerp(NeonPalette.TextMuted, NeonPalette.Cyan, _s.Stability);
+        canvas.DrawString($"stability {_s.Stability:F2}",
+            ox + cw * 0.5f, hudY, HorizontalAlignment.Center);
 
         // Tick counter (right)
         canvas.FontSize = 12;
