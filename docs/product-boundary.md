@@ -37,6 +37,8 @@ Anyone who wants to build real cursor discipline — anticipation, timing, stabi
 | [Interaction Rendering Canon](interaction-rendering-canon.md) | Trace-vs-Chaos interaction contract |
 | [Sound Design Bible](sound-design-bible.md) | Audio metaphysics, Trace/Chaos sound identity, mastery = silence |
 | [Procedural Audio Parameter Map](procedural-audio-parameter-map.md) | Simulation → audio parameter wiring |
+| [Audio Engine Architecture](audio-engine-architecture.md) | DSP components, data flow, master bus |
+| [Soundscape Moodboard](soundscape-moodboard.md) | Sensory guide to the world's sonic identity |
 | [Sandbox Drift Field v1](sandbox-drift-field-v1.md) | First villain proof (DriftDelivery_B1) |
 
 ---
