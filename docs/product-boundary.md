@@ -1,45 +1,86 @@
-# MouseTrainer — Product Boundary
-
-> Frozen document. Do not edit for 48 hours after commit.
+# Trace — Product Boundary
 
 ---
 
-## What MouseTrainer Is
+## What Trace Is
 
-MouseTrainer is a deterministic training tool that isolates and drills the real-world mouse tasks developers and designers perform daily — dragging, dropping, precise targeting, and multi-step cursor workflows — so users build speed and confidence in their actual work environment.
+Trace is a deterministic cursor discipline game. The player navigates chaos through precision, not power. Every obstacle trains one skill. Mastery looks calm. The engine is deterministic — same seed, same run, same outcome.
 
-## What MouseTrainer Is Not
+Built on the Deterministic Mouse Training Engine (60Hz fixed timestep, alpha interpolation, virtual coordinate space, pluggable game modes).
+
+## What Trace Is Not
 
 - **Not an aim trainer.** No crosshairs, no flick shots, no FPS mechanics.
-- **Not an arcade game.** No lives, no high-score chasing, no abstract challenges designed for entertainment.
-- **Not an abstract cursor puzzle.** Every task must map directly to a real mouse action users already perform in desktop software.
+- **Not an arcade game.** No lives, no score chasing, no power-ups, no spectacle.
+- **Not a power fantasy.** Trace never dominates chaos. Trace navigates it.
+- **Not cute.** No exclamation marks, no emoji, no gamification language.
 
 ## Who It Is For
 
-- **Developers** who spend hours in IDEs, terminals, and browser devtools — dragging tabs, selecting text ranges, resizing panels, navigating complex UIs.
-- **Designers and office power users** who work in tools like Figma, Excel, or file managers — drag-and-drop, precise placement, multi-select workflows.
+Anyone who wants to build real cursor discipline — anticipation, timing, stability, filtering, adaptability — through a system that respects their intelligence.
 
 ---
 
-## Committed Mode
+## Design Canon
 
-**Drag-and-Drop Gauntlet**
-
-Trains precise drag-and-drop under pressure.
+| Document | Purpose |
+|----------|---------|
+| [Villains & Trace Skills](villains-and-trace-skills.md) | Obstacle archetypes, counter-skills, player abilities, consistency contract |
+| [Tone Bible](tone-bible.md) | Voice, animation, UI, and feedback tone rules |
 
 ---
 
-## Deferred / Explicitly Not Building Yet
+## Villain Roster (5 Archetypes)
 
-These are not rejected — they are deferred until the first mode ships and proves the platform.
+| Villain | Verb | Counter-Skill |
+|---------|------|---------------|
+| Red Orbs | disrupt | Anticipation, calm motion |
+| Crushers | constrain | Commitment, timing confidence |
+| Drift Fields | destabilize | Grip stability, counterforce |
+| Flickers | mislead | Filtering, visual discipline |
+| Locks | restrict | Adaptive planning |
 
-- Reflex Gates (existing sandbox/probe — quarantined, not deleted)
-- Text selection drills
-- Right-click context menu navigation
-- Multi-select / lasso training
-- Tab/panel drag reordering
-- Scroll-and-click precision
-- Resize handle training
-- Any meta-system (progression, unlocks, daily challenges)
-- Any social features (leaderboards, sharing)
-- Any analytics dashboard or stats beyond per-session results
+## Trace Skills (5 States)
+
+| Skill | Effect | Tradeoff |
+|-------|--------|----------|
+| Focus | Reduce noise, dampen forces | Narrowed perception |
+| Flow State | Reward smooth motion | Penalize stops |
+| Anchor | Resist displacement | Slower movement |
+| Pulse | Brief clarity spike | No mechanical advantage |
+| Recovery | Partial slip correction | Very limited window |
+
+---
+
+## Consistency Contract
+
+- **Legibility:** Every failure explainable in one sentence
+- **Skill Alignment:** One obstacle, one skill, no overlap
+- **No Power Fantasy:** Trace navigates, never dominates
+- **Mastery Plateau:** Stability under pressure, speed is a side effect
+- **Boring Is Good:** High-skill play looks calm
+- **Sandbox First:** Every idea tested in isolation before integration
+
+---
+
+## Engine Heritage
+
+Forked from [DeterministicMouseTrainingEngine](https://github.com/mcp-tool-shop-org/DeterministicMouseTrainingEngine). Shares:
+
+- `IGameSimulation` pluggable mode interface
+- `DeterministicLoop` (60Hz fixed timestep + alpha interpolation)
+- `DeterministicRng` (xorshift32, seed-reproducible)
+- `GameEvent` pipeline
+- Replay system (MTR v1 binary format, FNV-1a verification)
+- Mutator composition (`LevelBlueprint` pure-function transforms)
+- Virtual coordinate space (1920x1080, letterbox scaling)
+
+---
+
+## Deferred
+
+- Progression / unlock systems
+- Leaderboards / social
+- Additional villain types beyond the core 5
+- Additional skill types beyond the core 5
+- Mouse trainer integration (carry gamification back to MouseTrainer once Trace ships)
