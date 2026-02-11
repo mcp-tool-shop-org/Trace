@@ -1,3 +1,5 @@
+using MouseTrainer.Domain.Motion;
+
 namespace MouseTrainer.MauiHost;
 
 // ═══════════════════════════════════════════════════════════════
@@ -43,6 +45,9 @@ public sealed class RendererState
     // ── Screen shake ─────────────────────────────────────
     public float ShakeOffsetX;
     public float ShakeOffsetY;
+
+    // ── Motion state (Trace identity) ──────────────────
+    public MotionState MotionState;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -131,13 +136,13 @@ public sealed class GameRenderer : IDrawable
         // Title
         canvas.FontSize = 22;
         canvas.FontColor = NeonPalette.Cyan;
-        canvas.DrawString("MOUSE TRAINER",
+        canvas.DrawString("TRACE",
             rect.Width * 0.5f, rect.Height * 0.38f, HorizontalAlignment.Center);
 
         // Subtitle
         canvas.FontSize = 12;
         canvas.FontColor = NeonPalette.TextDim;
-        canvas.DrawString("SANDBOX MODE",
+        canvas.DrawString("SANDBOX",
             rect.Width * 0.5f, rect.Height * 0.45f, HorizontalAlignment.Center);
 
         // Pulsing start prompt (click anywhere to begin)
@@ -285,17 +290,66 @@ public sealed class GameRenderer : IDrawable
         float cx = ox + _s.CursorX * scale;
         float cy = oy + _s.CursorY * scale;
 
+        // Color-by-state: each motion state shifts Trace's visual identity
+        var (coreColor, glowColor, edgeAlpha) = GetMotionStateColors(_s.MotionState);
+
+        // Override core to Lime when clicking (PrimaryDown)
+        if (_s.PrimaryDown)
+            coreColor = NeonPalette.Lime;
+
         // Outer glow
-        canvas.FillColor = NeonPalette.CyanGlow;
+        canvas.FillColor = glowColor;
         canvas.FillCircle(cx, cy, 14);
 
-        // Mid glow
-        canvas.FillColor = NeonPalette.Cyan.WithAlpha(0.3f);
+        // Mid glow (edge)
+        canvas.FillColor = coreColor.WithAlpha(edgeAlpha);
         canvas.FillCircle(cx, cy, 8);
 
-        // Core dot — green when clicking
-        canvas.FillColor = _s.PrimaryDown ? NeonPalette.Lime : NeonPalette.Cyan;
+        // Core dot
+        canvas.FillColor = coreColor;
         canvas.FillCircle(cx, cy, 4);
+    }
+
+    /// <summary>
+    /// Maps MotionState to Trace's visual language.
+    /// Returns (coreColor, outerGlowColor, edgeMidAlpha).
+    /// </summary>
+    private static (Color core, Color glow, float edgeAlpha) GetMotionStateColors(MotionState state)
+    {
+        return state switch
+        {
+            // Alignment: baseline cyan — stable, calm, no variation
+            MotionState.Alignment => (
+                NeonPalette.Cyan,
+                NeonPalette.CyanGlow,
+                0.3f),
+
+            // Correction: edge brightens — Trace is "thinking"
+            MotionState.Correction => (
+                NeonPalette.Cyan,
+                NeonPalette.CyanGlow,
+                0.55f),
+
+            // Commitment: forward bias tint — slight warmth toward intent
+            MotionState.Commitment => (
+                NeonPalette.Lerp(NeonPalette.Cyan, Colors.White, 0.15f),
+                NeonPalette.Cyan.WithAlpha(0.20f),
+                0.35f),
+
+            // Resistance: counterforce gradient — dim on force side, bright on counter
+            MotionState.Resistance => (
+                NeonPalette.Lerp(NeonPalette.Cyan, NeonPalette.Amber, 0.12f),
+                NeonPalette.Amber.WithAlpha(0.10f),
+                0.4f),
+
+            // Recovery: brief desaturation — humility, not drama
+            MotionState.Recovery => (
+                NeonPalette.Lerp(NeonPalette.Cyan, NeonPalette.TextDim, 0.3f),
+                NeonPalette.CyanGlow.WithAlpha(0.08f),
+                0.2f),
+
+            _ => (NeonPalette.Cyan, NeonPalette.CyanGlow, 0.3f),
+        };
     }
 
     // ══════════════════════════════════════════════════════
