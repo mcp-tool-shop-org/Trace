@@ -1,8 +1,10 @@
-# MouseTrainer
+# Trace
 
-Deterministic mouse dexterity trainer — precision, control, and flow.
+Deterministic cursor discipline game — precision, control, and composure under chaos.
 
-Built on .NET 8 MAUI (Windows-first), with a fully deterministic fixed-timestep simulation, composable blueprint mutators, and platform-stable run identity.
+Built on .NET 10 MAUI (Windows-first), with a fully deterministic fixed-timestep simulation, a five-state motion state machine, and a parametric visual identity driven entirely by simulation state.
+
+Trace is not an aim trainer. Trace is not an arcade game. Mastery looks calm.
 
 ---
 
@@ -11,48 +13,80 @@ Built on .NET 8 MAUI (Windows-first), with a fully deterministic fixed-timestep 
 Four-module modular monolith. No cycles, no platform leakage into libraries.
 
 ```
-MouseTrainer.Domain        --> (nothing)          Shared primitives, RNG, run identity
-MouseTrainer.Simulation    --> Domain             Deterministic loop, modes, mutators, levels
+MouseTrainer.Domain        --> (nothing)          Shared primitives, RNG, run identity, motion states
+MouseTrainer.Simulation    --> Domain             Deterministic loop, modes, mutators, replay system
 MouseTrainer.Audio         --> Domain             Cue system, asset verification
-MouseTrainer.MauiHost      --> all three          Composition root, MAUI platform host
+MouseTrainer.MauiHost      --> all three          Composition root, MAUI platform host, renderer
 ```
 
 See [`docs/modular.manifesto.md`](docs/modular.manifesto.md) for the full dependency graph and constitutional rules.
 
 ---
 
-## Game Modes
+## Motion State Machine
 
-### ReflexGates
+Trace inhabits exactly one of five motion states every frame:
 
-Side-scrolling gate challenge. Oscillating apertures on vertical walls — navigate the cursor through each gate before the scroll catches you. Deterministic seed → identical level every time.
+| State | Identity | Visual |
+|-------|----------|--------|
+| **Alignment** | Neutral, stable, calm | Baseline cyan, minimal glow |
+| **Commitment** | Decisive acceleration | Slight forward tint, warm edge |
+| **Resistance** | Counterforce lean | Amber-shifted edge, increased glow |
+| **Correction** | Micro-adjustments | Edge brightening, high precision |
+| **Recovery** | Brief recoil | Desaturation fade (150ms) |
 
-- Fixed 60 Hz timestep with accumulator-based catch-up
-- `xorshift32` RNG seeded per run for platform-stable generation
-- FNV-1a 64-bit hashing for run identity (same seed + mode + mutators = same RunId everywhere)
+Transitions are enforced by a compile-time transition table. Forbidden transitions return null.
+
+```
+Main loop:     Alignment → Commitment → Resistance → Correction → Alignment
+Recovery loop: Alignment → Recovery → Alignment
+```
+
+See [`docs/motion-state-machine.md`](docs/motion-state-machine.md) for the full FSM with entry/exit conditions.
 
 ---
 
-## Blueprint Mutators
+## Chaos Archetypes (5 Villains)
 
-Six composable transforms that reshape generated levels before play. Applied as an ordered fold over `LevelBlueprint`:
+| Archetype | Verb | Counter-Skill | Behavior |
+|-----------|------|---------------|----------|
+| **Red Orbs** | disrupt | Anticipation | Drift within region, bounce at bounds |
+| **Crushers** | constrain | Commitment | Fixed cycle: inactive → telegraph → active |
+| **Drift Fields** | destabilize | Grip stability | Constant directional force |
+| **Flickers** | mislead | Filtering | Flash → afterimage → invisible |
+| **Locks** | restrict | Adaptability | Axis/speed constraints with telegraph |
 
-| Mutator | Key Params | Effect |
-|---------|-----------|--------|
-| **NarrowMargin** | `pct` ∈ [0,1] | Scales aperture heights down — tighter gaps |
-| **WideMargin** | `pct` ∈ [0,1] | Scales aperture heights up — more forgiving |
-| **DifficultyCurve** | `exp` ∈ [0.1,5] | Remaps gate difficulty by index — front-load or back-load |
-| **RhythmLock** | `div` ∈ {2,3,4,6,8} | Quantizes gate phases to N divisions — rhythmic patterns |
-| **GateJitter** | `str` ∈ [0,1] | Deterministic vertical offset via sin() — spatial perturbation |
-| **SegmentBias** | `seg`, `amt`, `shape` | Divides gates into acts with per-segment difficulty bias |
+Chaos never reacts to Trace. Chaos is deterministic, indifferent, mechanical.
 
-Mutators are pure functions: `LevelBlueprint → LevelBlueprint`. They compose via pipeline (`specs.Aggregate`), are factory-resolved from `MutatorRegistry`, and their parameters are frozen into the `RunId` hash for reproducibility.
+See [`docs/chaos-behavior-state-machines.md`](docs/chaos-behavior-state-machines.md) and [`docs/interaction-rendering-canon.md`](docs/interaction-rendering-canon.md).
 
-### SegmentBias Shapes
+---
 
-- **Crescendo** (shape=0): Easy start → hard finish. `d = 2t - 1`
-- **Valley** (shape=1): Hard middle, easy ends. `d = 8t(1-t) - 1`
-- **Wave** (shape=2): Alternating easy/hard segments. `d = (-1)^k`
+## Rendering
+
+Trace's rendering is a pure function of state. No animation timelines, no sprite sheets.
+
+```
+VisualState = RenderProfile[MotionState]
+```
+
+Color-by-state drives everything: fill, edge, glow strength, directional bias, desaturation. The renderer expresses Trace's identity with zero animation assets.
+
+See [`docs/renderer-integration-trace.md`](docs/renderer-integration-trace.md) and [`docs/visual-style-guide.md`](docs/visual-style-guide.md).
+
+---
+
+## Engine Heritage
+
+Forked from [DeterministicMouseTrainingEngine](https://github.com/mcp-tool-shop-org/DeterministicMouseTrainingEngine). Core systems:
+
+- `IGameSimulation` — pluggable game mode interface (2 methods)
+- `DeterministicLoop` — 60Hz fixed timestep + alpha interpolation
+- `DeterministicRng` — xorshift32, seed-reproducible
+- `GameEvent` pipeline — typed event stream
+- Replay system — MTR v1 binary format, FNV-1a verification
+- Mutator composition — `LevelBlueprint` pure-function transforms
+- Virtual coordinate space — 1920×1080, letterbox scaling
 
 ---
 
@@ -60,11 +94,13 @@ Mutators are pure functions: `LevelBlueprint → LevelBlueprint`. They compose v
 
 ```
 src/
-  MouseTrainer.Domain/          Leaf module — events, input, runs, RNG
+  MouseTrainer.Domain/          Leaf module — events, input, runs, RNG, motion states
     Events/                     GameEvent, GameEventType
     Input/                      PointerInput
+    Motion/                     MotionState, MotionTrigger, MotionTransitionTable
     Runs/                       RunDescriptor, RunId, MutatorId/Spec/Param, ModeId, DifficultyTier
-    Utility/                    DeterministicRng (xorshift32)
+    Scoring/                    ScoreComponentId
+    Utility/                    DeterministicRng (xorshift32), Fnv1a, Leb128
 
   MouseTrainer.Simulation/      Deterministic simulation engine
     Core/                       DeterministicLoop, FrameResult, IGameSimulation
@@ -72,30 +108,52 @@ src/
     Levels/                     LevelBlueprint, ILevelGenerator, LevelGeneratorRegistry
     Modes/ReflexGates/          Gate, ReflexGateSimulation, ReflexGateGenerator, ReflexGateConfig
     Mutators/                   IBlueprintMutator, MutatorPipeline, MutatorRegistry, 6 mutators
-    Session/                    SessionController, SessionModels
+    Replay/                     ReplayRecorder, ReplaySerializer, InputTrace, ReplayVerifier
+    Session/                    SessionController, ScoreBreakdown, SessionModels
 
   MouseTrainer.Audio/           Audio cue system
     Assets/                     AssetManifest, AssetVerifier, IAssetOpener
     Core/                       AudioDirector, AudioCue, AudioCueMap, IAudioSink
 
   MouseTrainer.MauiHost/        MAUI composition root (Windows)
+                                GameRenderer, NeonPalette, TrailBuffer, ParticleSystem
 
 tests/
-  MouseTrainer.Tests/           214 tests across 6 categories
+  MouseTrainer.Tests/           329 tests across 10 categories
     Architecture/               Dependency boundary enforcement
     Determinism/                Replay regression, RNG, session controller
     Levels/                     Generator extraction
     Mutators/                   Blueprint mutator correctness + composition
     Persistence/                Session store
+    Replay/                     Serializer, recorder, verifier, quantization, event hashing
     Runs/                       RunDescriptor golden hashes + identity
+    Scoring/                    Score breakdown
+    Utility/                    Leb128 encoding
+    MotionStateTests.cs         State machine transitions + forbidden paths
 
-tools/
-  MouseTrainer.AudioGen/        Audio asset generation tooling
-
-docs/
-  modular.manifesto.md          Dependency graph + constitutional rules
-  MAUI_AssetOpener_Snippet.md   Platform asset wiring snippet
+docs/                           14 design documents (see Design Canon below)
 ```
+
+---
+
+## Design Canon
+
+| Document | Purpose |
+|----------|---------|
+| [`product-boundary.md`](docs/product-boundary.md) | What Trace is, what it isn't, who it's for |
+| [`tone-bible.md`](docs/tone-bible.md) | Voice, UI, animation, and feedback tone rules |
+| [`motion-language-spec.md`](docs/motion-language-spec.md) | Movement grammar, path language, force responses |
+| [`motion-state-machine.md`](docs/motion-state-machine.md) | 5-state FSM with transitions and forbidden paths |
+| [`visual-style-guide.md`](docs/visual-style-guide.md) | Trace form, color-by-state, world identity |
+| [`renderer-integration-trace.md`](docs/renderer-integration-trace.md) | RenderProfile, ForceVector, StabilityScalar, glow/bias/desaturation |
+| [`villains-and-trace-skills.md`](docs/villains-and-trace-skills.md) | 5 archetypes, 5 skills, consistency contract |
+| [`chaos-entity-animation-bible.md`](docs/chaos-entity-animation-bible.md) | Per-archetype motion and animation specs |
+| [`chaos-behavior-state-machines.md`](docs/chaos-behavior-state-machines.md) | Per-archetype FSMs (enum + transition ready) |
+| [`renderer-integration-chaos.md`](docs/renderer-integration-chaos.md) | ChaosRenderProfile, per-archetype draw specs |
+| [`interaction-rendering-canon.md`](docs/interaction-rendering-canon.md) | Trace-vs-Chaos interaction contract |
+| [`sandbox-drift-field-v1.md`](docs/sandbox-drift-field-v1.md) | First villain proof (DriftDelivery_B1) |
+| [`modular.manifesto.md`](docs/modular.manifesto.md) | Dependency graph + constitutional rules |
+| [`MAUI_AssetOpener_Snippet.md`](docs/MAUI_AssetOpener_Snippet.md) | Platform asset wiring snippet |
 
 ---
 
@@ -105,7 +163,7 @@ docs/
 # Build simulation library (0 warnings, TreatWarningsAsErrors)
 dotnet build src/MouseTrainer.Simulation/
 
-# Run all 214 tests
+# Run all 329 tests
 dotnet test tests/MouseTrainer.Tests/
 
 # Run MAUI host (Windows — use Visual Studio, set startup to MauiHost)
@@ -116,9 +174,11 @@ dotnet test tests/MouseTrainer.Tests/
 ## Key Design Principles
 
 - **Determinism is constitutional.** Same seed → same simulation → same score, always. No `DateTime.Now`, no `Random`, no platform-dependent floats in the hot path.
-- **Modular monolith, not microservices.** Four assemblies with enforced one-way dependencies. Domain is the leaf; MauiHost is the only composition root.
-- **Protocol-grade identity.** `MutatorId`, `ModeId`, `RunId` are permanent — once created, frozen forever. FNV-1a hashing with canonical parameter serialization.
-- **Warnings are errors.** Library projects use `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`. MAUI host opts out (SDK-generated warnings).
+- **Rendering is a pure function of state.** No animation timelines. MotionState + ForceVector + StabilityScalar → visual output.
+- **Chaos is indifferent.** Obstacles never react to the player. They are systems, not enemies.
+- **Mastery looks calm.** If high-skill play looks frantic, the system is lying.
+- **Modular monolith.** Four assemblies with enforced one-way dependencies. Domain is the leaf; MauiHost is the only composition root.
+- **Warnings are errors.** Library projects use `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`.
 
 ---
 
