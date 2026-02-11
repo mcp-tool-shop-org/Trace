@@ -39,6 +39,7 @@ Anyone who wants to build real cursor discipline — anticipation, timing, stabi
 | [Procedural Audio Parameter Map](procedural-audio-parameter-map.md) | Simulation → audio parameter wiring |
 | [Audio Engine Architecture](audio-engine-architecture.md) | DSP components, data flow, master bus |
 | [Soundscape Moodboard](soundscape-moodboard.md) | Sensory guide to the world's sonic identity |
+| [**Soundscape Canon**](soundscape-canon.md) | **Unified audio canon (consolidates all 4 audio docs)** |
 | [Sandbox Drift Field v1](sandbox-drift-field-v1.md) | First villain proof (DriftDelivery_B1) |
 
 ---

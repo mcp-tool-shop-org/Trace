@@ -132,7 +132,7 @@ tests/
     Utility/                    Leb128 encoding
     MotionStateTests.cs         State machine transitions + forbidden paths
 
-docs/                           18 design documents (see Design Canon below)
+docs/                           19 design documents (see Design Canon below)
 ```
 
 ---
@@ -156,6 +156,7 @@ docs/                           18 design documents (see Design Canon below)
 | [`procedural-audio-parameter-map.md`](docs/procedural-audio-parameter-map.md) | Simulation → audio parameter wiring |
 | [`audio-engine-architecture.md`](docs/audio-engine-architecture.md) | DSP components, data flow, master bus |
 | [`soundscape-moodboard.md`](docs/soundscape-moodboard.md) | Sensory guide to the world's sonic identity |
+| [**`soundscape-canon.md`**](docs/soundscape-canon.md) | **Unified audio canon (consolidates all 4 audio docs)** |
 | [`sandbox-drift-field-v1.md`](docs/sandbox-drift-field-v1.md) | First villain proof (DriftDelivery_B1) |
 | [`modular.manifesto.md`](docs/modular.manifesto.md) | Dependency graph + constitutional rules |
 | [`MAUI_AssetOpener_Snippet.md`](docs/MAUI_AssetOpener_Snippet.md) | Platform asset wiring snippet |
