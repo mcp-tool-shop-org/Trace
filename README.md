@@ -1,6 +1,18 @@
-# Trace
+<p align="center">
+  <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
+</p>
 
-Deterministic cursor discipline game — precision, control, and composure under chaos.
+<p align="center"><img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/Trace/readme.png" alt="Trace" width="400"></p>
+
+<p align="center"><strong>Deterministic cursor discipline game — precision, control, and composure under chaos.</strong></p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10-purple.svg" alt=".NET 10"></a>
+  <a href="https://mcp-tool-shop-org.github.io/Trace/"><img src="https://img.shields.io/badge/Landing_Page-live-blue" alt="Landing Page"></a>
+</p>
+
+---
 
 Built on .NET 10 MAUI (Windows-first), with a fully deterministic fixed-timestep simulation, a five-state motion state machine, and a parametric visual identity driven entirely by simulation state.
 
@@ -191,3 +203,5 @@ dotnet test tests/MouseTrainer.Tests/
 ## License
 
 [MIT](LICENSE)
+
+> Built by [MCP Tool Shop](https://mcp-tool-shop.github.io/)
