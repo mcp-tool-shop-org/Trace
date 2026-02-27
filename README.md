@@ -200,6 +200,31 @@ dotnet test tests/MouseTrainer.Tests/
 
 ---
 
+## Security & Data Scope
+
+| Aspect | Detail |
+|--------|--------|
+| **Data touched** | Game state (in-memory), high scores (local only), simulation parameters |
+| **Data NOT touched** | No telemetry, no analytics, no network calls, no cloud sync, no credentials |
+| **Permissions** | Input: mouse/keyboard. Display: GPU rendering. No filesystem writes except user settings |
+| **Network** | None — fully offline application |
+| **Telemetry** | None collected or sent |
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## Scorecard
+
+| Category | Score |
+|----------|-------|
+| A. Security | 10 |
+| B. Error Handling | 10 |
+| C. Operator Docs | 10 |
+| D. Shipping Hygiene | 10 |
+| E. Identity (soft) | 10 |
+| **Overall** | **50/50** |
+
+> Full audit: [SHIP_GATE.md](SHIP_GATE.md) · [SCORECARD.md](SCORECARD.md)
+
 ## License
 
 [MIT](LICENSE)
