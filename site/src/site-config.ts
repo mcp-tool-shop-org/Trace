@@ -14,7 +14,7 @@ export const config: SiteConfig = {
     headlineAccent: 'navigate chaos through precision.',
     description: 'A cursor discipline game built on a fully deterministic 60Hz simulation. Five motion states, five chaos archetypes, and a rendering engine that is a pure function of state. Mastery looks calm.',
     primaryCta: { href: '#architecture', label: 'Explore' },
-    secondaryCta: { href: 'https://github.com/mcp-tool-shop-org/Trace', label: 'Source' },
+    secondaryCta: { href: 'handbook/', label: 'Read the Handbook' },
     previews: [
       { label: 'State Machine', code: 'Alignment → Commitment → Resistance → Correction → Alignment' },
       { label: 'Rendering', code: 'VisualState = RenderProfile[MotionState]' },
