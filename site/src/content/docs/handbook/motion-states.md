@@ -33,6 +33,19 @@ Alignment → Recovery → Alignment
 
 Forbidden transitions (e.g., Commitment → Recovery) are enforced at compile time. The transition table is the single source of truth for state flow.
 
+## Triggers
+
+Each transition is caused by a specific `MotionTrigger`:
+
+| Trigger | Cause | Transition |
+|---------|-------|------------|
+| Commit | Player initiates a deliberate path | Alignment → Commitment |
+| EncounterForce | External force (Drift Field, push) | Commitment → Resistance |
+| Stabilize | Force stabilizes | Resistance → Correction |
+| Refine | Path refined, stability restored | Correction → Alignment |
+| Slip | Minor collision, timing slip, jitter | Alignment → Recovery |
+| Regain | Stability regained after recovery | Recovery → Alignment |
+
 ## Rendering from state
 
 Every visual property is derived from the current motion state. There are no animation timelines or sprite sheets:

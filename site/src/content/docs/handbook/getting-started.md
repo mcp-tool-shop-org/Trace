@@ -17,7 +17,7 @@ dotnet build src/MouseTrainer.Simulation/
 
 ## Test
 
-Run all 340 tests across 11 categories:
+Run all 348 tests across 12 categories:
 
 ```bash
 dotnet test tests/MouseTrainer.Tests/

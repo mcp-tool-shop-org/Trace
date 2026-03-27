@@ -30,6 +30,10 @@ Forked from DeterministicMouseTrainingEngine. Core systems:
 - Mutator composition — `LevelBlueprint` pure-function transforms
 - Virtual coordinate space — 1920x1080, letterbox scaling
 
+## Session orchestration
+
+The `SessionController` manages a three-state machine: Ready, Playing, and Results. It processes `GameEvent` emissions from the simulation to build per-gate results, tracks combo streaks, and produces an immutable `SessionResult` with a full `ScoreBreakdown`. No MAUI dependencies — pure orchestration logic inside the Simulation module.
+
 ## Design canon
 
 Trace has 19 design documents covering every system:

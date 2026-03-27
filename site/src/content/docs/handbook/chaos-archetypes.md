@@ -34,4 +34,15 @@ When Trace enters a chaos zone, the interaction is governed by strict rules:
 
 ## Mutators
 
-Mutators compose chaos patterns through `LevelBlueprint` pure-function transforms. The `MutatorPipeline` chains multiple mutators, and the `MutatorRegistry` manages available transforms. Six built-in mutators ship with the simulation.
+Mutators compose chaos patterns through `LevelBlueprint` pure-function transforms. The `MutatorPipeline` chains multiple mutators, and the `MutatorRegistry` manages available transforms. Six built-in mutators ship with the simulation:
+
+| Mutator | Effect |
+|---------|--------|
+| DifficultyCurve | Scales gate parameters across the level progression |
+| GateJitter | Adds randomized offset to gate positions |
+| NarrowMargin | Tightens gate apertures for precision play |
+| WideMargin | Widens gate apertures for accessibility |
+| RhythmLock | Locks gate oscillation to a fixed rhythm |
+| SegmentBias | Biases gate placement toward a playfield region |
+
+Mutators never modify their input — they always return a new blueprint.

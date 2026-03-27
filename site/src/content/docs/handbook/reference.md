@@ -19,22 +19,24 @@ sidebar:
 | Category | What it tests |
 |----------|--------------|
 | Architecture | Dependency boundary enforcement |
-| Determinism | Replay regression, RNG, session controller |
+| Determinism | Replay regression, RNG, gate generation, session controller |
 | Levels | Generator extraction |
+| MotionAnalyzer | Motion analysis from pointer input |
+| MotionStates | State machine transitions + forbidden paths |
 | Mutators | Blueprint mutator correctness + composition |
 | Persistence | Session store |
 | Replay | Serializer, recorder, verifier, quantization, event hashing |
-| Runs | RunDescriptor golden hashes + identity |
+| Runs | RunDescriptor golden hashes, MutatorSpec identity |
 | Scoring | Score breakdown |
 | Utility | Leb128 encoding |
-| MotionStates | State machine transitions + forbidden paths |
+| Version | Assembly version consistency |
 
 ## Build commands
 
 | Command | Description |
 |---------|-------------|
 | `dotnet build src/MouseTrainer.Simulation/` | Build simulation library |
-| `dotnet test tests/MouseTrainer.Tests/` | Run all 340 tests |
+| `dotnet test tests/MouseTrainer.Tests/` | Run all 348 tests |
 
 ## Links
 

@@ -129,20 +129,22 @@ src/
 
   MouseTrainer.MauiHost/        MAUI composition root (Windows)
                                 GameRenderer, NeonPalette, TrailBuffer, ParticleSystem,
-                                MotionAnalyzer, ScreenShake
+                                MotionAnalyzer, ScreenShake, GhostPlayback, SessionStore
 
 tests/
-  MouseTrainer.Tests/           340 tests across 11 categories
+  MouseTrainer.Tests/           348 tests across 12 categories
     Architecture/               Dependency boundary enforcement
-    Determinism/                Replay regression, RNG, session controller
+    Determinism/                Replay regression, RNG, gate generation, session controller
     Levels/                     Generator extraction
     Mutators/                   Blueprint mutator correctness + composition
     Persistence/                Session store
     Replay/                     Serializer, recorder, verifier, quantization, event hashing
-    Runs/                       RunDescriptor golden hashes + identity
+    Runs/                       RunDescriptor golden hashes, MutatorSpec identity
     Scoring/                    Score breakdown
     Utility/                    Leb128 encoding
+    MotionAnalyzerTests.cs      Motion analysis from pointer input
     MotionStateTests.cs         State machine transitions + forbidden paths
+    VersionTests.cs             Assembly version consistency
 
 docs/                           19 design documents (see Design Canon below)
 ```
@@ -181,7 +183,7 @@ docs/                           19 design documents (see Design Canon below)
 # Build simulation library (0 warnings, TreatWarningsAsErrors)
 dotnet build src/MouseTrainer.Simulation/
 
-# Run all 340 tests
+# Run all 348 tests
 dotnet test tests/MouseTrainer.Tests/
 
 # Run MAUI host (Windows — use Visual Studio, set startup to MauiHost)
