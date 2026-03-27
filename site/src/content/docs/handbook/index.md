@@ -11,6 +11,7 @@ Trace is a deterministic cursor discipline game built on .NET 10 MAUI. Five moti
 
 ## What's inside
 
+- **[Beginners](/Trace/handbook/beginners/)** — New to Trace? Start here
 - **[Getting Started](/Trace/handbook/getting-started/)** — Build, test, and run
 - **[Motion States](/Trace/handbook/motion-states/)** — The five-state machine that drives Trace
 - **[Chaos Archetypes](/Trace/handbook/chaos-archetypes/)** — Five villains, five counter-skills

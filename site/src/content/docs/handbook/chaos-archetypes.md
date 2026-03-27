@@ -27,9 +27,10 @@ Chaos never reacts to Trace. Every obstacle is a deterministic system, not an en
 
 When Trace enters a chaos zone, the interaction is governed by strict rules:
 
-- Blinks suppress eye shapes, visemes suppress mouth emotions
+- Chaos never reacts to Trace — only Trace's MotionState changes on contact
 - Each archetype has its own render profile (color, shape, animation)
 - Telegraphs always precede dangerous states — no cheap shots
+- Collisions are mechanical, not dramatic — no explosions or big flashes
 
 ## Mutators
 
